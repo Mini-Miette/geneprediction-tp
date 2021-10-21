@@ -97,19 +97,6 @@ def has_shine_dalgarno(shine_regex, sequence, start,
                        max_shine_dalgarno_distance):
     """Find a shine dalgarno motif before the start codon
     """
-    """
-    has_shine_dalgarno /5
-    shine_regex: regex object permettant d’identifier une séquence de Shine-Dalgarno
-    sequence: Séquence du génome
-    start: position de début de la recherche
-    max_shine_dalgarno_distance : Position relative de la séquence de Shine-Dalgarno 
-    par rapport au codon d’initiation (valeur obtenue en argument du programme)
-    
-    has_shine_dalgarno  retourne True si un motif de Shine-Dalgarno a été 
-    identifié entre max_shine_dalgarno_distance et -6 nucléotides en amont 
-    du codon d’initiation et False sinon. La séquence de Shine-Dalgano ne se 
-    trouve pas nécessairement dans le même cadre de lecture que le codon d’initiation.
-    """
     start_search_sd = start - max_shine_dalgarno_distance
     if start_search_sd < 0:
         start_search_sd = 0
@@ -128,7 +115,30 @@ def predict_genes(sequence, start_regex, stop_regex, shine_regex,
                   min_gene_len, max_shine_dalgarno_distance, min_gap):
     """Predict most probable genes
     """
-    pass
+    current_pos = 0
+    genes_list = []
+
+    while len(sequence) - current_pos >= min_gap:
+        new_gene = False
+        current_pos = find_start(start_regex, sequence, current_pos,
+                                 len(sequence))
+
+        if current_pos is not None:
+            stop = find_stop(stop_regex, sequence, current_pos)
+            if stop is not None:
+                gene_len = stop - current_pos
+                if gene_len >= min_gene_len:
+                    if has_shine_dalgarno(shine_regex, sequence, current_pos,
+                                          max_shine_dalgarno_distance):
+                        new_gene = True  # On a trouvé un gène !
+
+        if new_gene:
+            genes_list.append([current_pos + 1, stop + 3])
+            current_pos = stop + 3 + min_gap
+        else:
+            current_pos += 1
+
+    return genes_list
 
 
 def write_genes_pos(predicted_genes_file, probable_genes):
@@ -189,9 +199,17 @@ def main():
     # Shine AGGAGGUAA
     # AGGA ou GGAGG
     shine_regex = re.compile('A?G?GAGG|GGAG|GG.{1}GG')
+
     # Arguments
-    #args = get_arguments()
+    args = get_arguments()
+
     # Let us do magic in 5' to 3'
+    sequence = read_fasta(args.genome_file)
+    genes_53 = predict_genes(sequence, start_regex, stop_regex, shine_regex,
+                             args.min_gene_len,
+                             args.max_shine_dalgarno_distance,
+                             args.min_gap)
+    print(len(genes_53))
 
     # Don't forget to uncomment !!!
     # Call these function in the order that you want
