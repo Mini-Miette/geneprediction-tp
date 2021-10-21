@@ -1,8 +1,10 @@
 import argparse
+import time
 import sys
 import os
 import csv
 import re
+from operator import itemgetter
 
 
 def isfile(path):
@@ -66,7 +68,9 @@ def read_fasta(fasta_file):
         for line in file:
             if not str(line).startswith('>'):
                 sequence += str(line).strip()
-    return sequence.upper()
+    sequence = sequence.upper()
+    sequence = sequence.replace('U', 'T')
+    return sequence
 
 
 def find_start(start_regex, sequence, start, stop):
@@ -134,7 +138,7 @@ def predict_genes(sequence, start_regex, stop_regex, shine_regex,
 
         if new_gene:
             genes_list.append([current_pos + 1, stop + 3])
-            current_pos = stop + 3 + min_gap
+            current_pos = stop + 2 + min_gap
         else:
             current_pos += 1
 
@@ -145,8 +149,8 @@ def write_genes_pos(predicted_genes_file, probable_genes):
     """Write list of gene positions
     """
     try:
-        with open(predicted_genes_file, "wt") as predict_genes:
-            predict_genes_writer = csv.writer(predict_genes, delimiter=",")
+        with open(predicted_genes_file, "wt") as genes_file:
+            predict_genes_writer = csv.writer(genes_file, delimiter=",")
             predict_genes_writer.writerow(["Start", "Stop"])
             predict_genes_writer.writerows(probable_genes)
     except IOError:
@@ -190,6 +194,9 @@ def main():
     """
     Main program function
     """
+
+    parse = False
+
     # Gene detection over genome involves to consider a thymine instead of
     # an uracile that we would find on the expressed RNA
     #start_codons = ['TTG', 'CTG', 'ATT', 'ATG', 'GTG']
@@ -202,23 +209,40 @@ def main():
 
     # Arguments
     args = get_arguments()
+    genome_file = args.genome_file
+    min_gene_len = args.min_gene_len
+    max_shine_dalgarno_distance = args.max_shine_dalgarno_distance
+    min_gap = args.min_gap
+    predicted_genes_file = args.predicted_genes_file
+    fasta_file = args.fasta_file
 
-    # Let us do magic in 5' to 3'
-    sequence = read_fasta(args.genome_file)
+    # Sens 5' -> 3'
+    sequence = read_fasta(genome_file)
     genes_53 = predict_genes(sequence, start_regex, stop_regex, shine_regex,
-                             args.min_gene_len,
-                             args.max_shine_dalgarno_distance,
-                             args.min_gap)
-    print(len(genes_53))
+                             min_gene_len,
+                             max_shine_dalgarno_distance,
+                             min_gap)
+    print(f"Nb de gènes 5' -> 3' : {len(genes_53)}")
 
-    # Don't forget to uncomment !!!
-    # Call these function in the order that you want
-    # We reverse and complement
-    #sequence_rc = reverse_complement(sequence)
-    # Call to output functions
-    #write_genes_pos(args.predicted_genes_file, probable_genes)
-    #write_genes(args.fasta_file, sequence, probable_genes, sequence_rc, probable_genes_comp)
+    # Sens 3' -> 5'
+    sequence_rc = reverse_complement(sequence)
+    genes_35 = predict_genes(sequence_rc, start_regex, stop_regex, shine_regex,
+                             min_gene_len,
+                             max_shine_dalgarno_distance,
+                             min_gap)
+    print(f"Nb de gènes 3' -> 5' : {len(genes_35)}")
+    genes_35 = [[len(sequence) - e + 1, len(sequence) - s + 1]
+                for s, e in genes_35][::-1]
+
+    # Ecriture des résultats
+    write_genes_pos(predicted_genes_file,
+                    sorted(genes_53 + genes_35, key=itemgetter(0)))
+    write_genes(fasta_file, sequence, genes_53, sequence_rc, genes_35)
 
 
 if __name__ == '__main__':
+    start_time = time.time()
     main()
+    end_time = time.time() - start_time
+    print(f'Genes prediction done in {end_time // 60:.0f} min'
+          f' {end_time % 60:.2f} s.')
