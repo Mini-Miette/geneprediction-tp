@@ -97,7 +97,31 @@ def has_shine_dalgarno(shine_regex, sequence, start,
                        max_shine_dalgarno_distance):
     """Find a shine dalgarno motif before the start codon
     """
-    pass
+    """
+    has_shine_dalgarno /5
+    shine_regex: regex object permettant d’identifier une séquence de Shine-Dalgarno
+    sequence: Séquence du génome
+    start: position de début de la recherche
+    max_shine_dalgarno_distance : Position relative de la séquence de Shine-Dalgarno 
+    par rapport au codon d’initiation (valeur obtenue en argument du programme)
+    
+    has_shine_dalgarno  retourne True si un motif de Shine-Dalgarno a été 
+    identifié entre max_shine_dalgarno_distance et -6 nucléotides en amont 
+    du codon d’initiation et False sinon. La séquence de Shine-Dalgano ne se 
+    trouve pas nécessairement dans le même cadre de lecture que le codon d’initiation.
+    """
+    start_search_sd = start - max_shine_dalgarno_distance
+    if start_search_sd < 0:
+        start_search_sd = 0
+
+    match = shine_regex.search(sequence, start_search_sd, start)
+    if match is None:
+        return False
+    else:
+        if (match.end(0) + 6) >= start:
+            return False
+        else:
+            return True
 
 
 def predict_genes(sequence, start_regex, stop_regex, shine_regex,
