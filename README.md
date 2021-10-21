@@ -1,8 +1,15 @@
 # TP Prédiction de gènes
+
+
+## Résultat
+
+Diagramme de Venn : \
+![](/output/jVenn_chart.png)
   
 Les gènes correspondent à une sous-séquence des transcripts traduites en protéines par le ribosome. Ils comportent un cadre de lecture consistant en des triplets consécutifs depuis un codon d’initiation ( 'AUG', 'UUG', 'CUG', 'AUU' ou 'GUG') et un codon stop (UAA', 'UAG', ou 'UGA'). Ces codons sont dans le même cadre de lecture ! 
 On retrouve en amont du codon d’initiation un motif permettant l'initiation de la traduction via la fixation de la sous-unité 16S de l’ARN ribosomique : AGGAGGUAA appelée séquence de Shine-Dalagarno  [Shine et Dalgarno 1974]. Ce motif n'est pas nécessairement dans le même cadre de lecture que le codon d'initiation et peut être incomplet.
 
+## Sujet
 
 Peu d’organismes bénéficient à ce jour d’une annotation vérifiée expérimentalement. La prédiction des gènes reste donc une tâche importante pour l’annotation automatique des génomes. De multiples logiciels et approches techniques existent pour cette tâche :
 https://en.wikipedia.org/wiki/List_of_gene_prediction_software
